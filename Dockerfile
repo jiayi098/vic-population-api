@@ -1,18 +1,18 @@
 # Use official Python image
 FROM python:3.10-slim
 
-# Set working directory inside the container
+# Set working directory
 WORKDIR /app
 
-# Copy dependency file and code
+# Copy deps first (better cache)
 COPY requirements.txt .
-COPY app.py .
-COPY .env .
-COPY Estimated_resident_population_in_VIC.csv .
-
-# Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
-RUN pip install python-dotenv
+# ensure gunicorn is installed
+RUN pip install --no-cache-dir gunicorn
 
-# Set default command to run app
-CMD ["python", "app.py"]
+# Copy app code
+COPY app.py .
+
+
+# Start with gunicorn and bind to Render's $PORT
+CMD exec gunicorn app:app --bind 0.0.0.0:${PORT}
