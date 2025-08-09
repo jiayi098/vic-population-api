@@ -21,7 +21,7 @@ app = Flask(__name__)
 # 1. Return welcome message
 @app.route("/")
 def home():
-    return jsonify({"message": "Welcome to the Victoria Population API"})
+    return jsonify({"message": "Welcome to the Melbourne City Population API"})
 
 # 2. Return the rows of the melbourne city
 @app.route("/melbourne-city")
