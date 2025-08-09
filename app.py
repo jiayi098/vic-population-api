@@ -23,20 +23,66 @@ app = Flask(__name__)
 def home():
     return jsonify({"message": "Welcome to the Victoria Population API"})
 
-# 2. Return the first 50 rows of the Victoria population table
-@app.route("/population")
-def get_population():
+# 2. Return the rows of the melbourne city
+@app.route("/melbourne-city")
+def melbourne_city():
     conn = get_connection()
     cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM population_VIC LIMIT 50")
+    cursor.execute("""
+        SELECT *
+        FROM population_VIC
+        WHERE sa3_name = 'Melbourne City'
+    """)
     rows = cursor.fetchall()
     cursor.close()
     conn.close()
     return jsonify(rows)
 
-# 3. Get Melbourne City data: compare population and population density trends by SA2 name
-@app.route("/population/melbourne-city")
-def melbourne_city_data():
+# 3. Get subregions of melbourne city
+@app.route("/melbourne-city/subregions")
+def melbourne_city_subregions():
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("""
+        SELECT DISTINCT sa2_name
+        FROM population_VIC
+        WHERE sa3_name = 'Melbourne City'
+    """)
+    rows = [row["sa2_name"] for row in cursor.fetchall()]
+    cursor.close()
+    conn.close()
+    return jsonify(rows)
+
+# 4. Get population trends for subregions
+@app.route("/melbourne-city/population-trends")
+def melbourne_city_population_trends():
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("""
+        SELECT sa2_name, y2001, y2002, y2003, y2004, y2005,
+               y2006, y2007, y2008, y2009, y2010,
+               y2011, y2012, y2013, y2014, y2015,
+               y2016, y2017, y2018, y2019, y2020, y2021
+        FROM population_VIC
+        WHERE sa3_name = 'Melbourne City'
+    """)
+    rows = cursor.fetchall()
+    cursor.close()
+    conn.close()
+
+    result = []
+    for row in rows:
+        yearly_pop = {year: row[f"y{year}"] for year in range(2001, 2022)}
+        result.append({
+            "sa2_name": row["sa2_name"],
+            "yearly_population": yearly_pop
+        })
+
+    return jsonify(result)
+
+# 5. Get population density trends for subregions
+@app.route("/melbourne-city/density-trends")
+def melbourne_city_density_trends():
     conn = get_connection()
     cursor = conn.cursor(dictionary=True)
     cursor.execute("""
@@ -52,27 +98,14 @@ def melbourne_city_data():
     cursor.close()
     conn.close()
 
-    if not rows:
-        return jsonify({"message": "No data found for Melbourne City"})
-
     result = []
     for row in rows:
-        sa2_name = row["sa2_name"]
-        area = row["area_km2"]
-
-        # Yearly population data
-        yearly_population = {year: row[f"y{year}"] for year in range(2001, 2022)}
-
-        # Yearly population density (population / area)
-        yearly_density = {}
-        for year in range(2001, 2022):
-            pop = row[f"y{year}"]
-            yearly_density[year] = round(pop / area, 2) if area and area > 0 else None
-
+        densities = {year: round(row[f"y{year}"] / row["area_km2"], 2)
+                     if row["area_km2"] else None
+                     for year in range(2001, 2022)}
         result.append({
-            "sa2_name": sa2_name,
-            "yearly_population": yearly_population,
-            "yearly_density": yearly_density
+            "sa2_name": row["sa2_name"],
+            "yearly_density": densities
         })
 
     return jsonify(result)
