@@ -29,14 +29,16 @@ CREATE TABLE IF NOT EXISTS population_VIC (
     sa4_name VARCHAR(100),
     sa3_code VARCHAR(10),
     sa3_name VARCHAR(100),
-    sa2_code VARCHAR(20),
+    sa2_code VARCHAR(20) PRIMARY KEY,
     sa2_name VARCHAR(100),
     y2001 INT, y2002 INT, y2003 INT, y2004 INT, y2005 INT,
     y2006 INT, y2007 INT, y2008 INT, y2009 INT, y2010 INT,
     y2011 INT, y2012 INT, y2013 INT, y2014 INT, y2015 INT,
     y2016 INT, y2017 INT, y2018 INT, y2019 INT, y2020 INT,
     y2021 INT,
-    area_km2 FLOAT
+    area_km2 FLOAT,
+    INDEX idx_sa3_name (sa3_name),
+    INDEX idx_st_code (st_code)
 );
 """)
 conn.commit()
